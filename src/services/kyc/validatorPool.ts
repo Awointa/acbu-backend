@@ -119,7 +119,7 @@ async function tryResolveApplication(applicationId: string): Promise<void> {
     where: { applicationId },
     select: { result: true },
   });
-  const pending = validations.some((v) => v.result === 'pending');
+  const pending = validations.some((v: { result: string }) => v.result === 'pending');
   if (pending) return;
   const results = validations.map((v: { result: string }) => v.result);
   const rule = config.kyc.consensusRule;

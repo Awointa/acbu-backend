@@ -1,9 +1,10 @@
 /**
  * Signin: identifier (username/email/phone) + passcode.
+ * Signup: username + passcode (simple account creation; no email).
  * If 2FA enabled, returns challenge_token (JWT); else issues api_key.
  * OTP (sms/email) is created and published to RabbitMQ OTP_SEND for delivery.
  */
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { totp } from 'otplib';
 import { prisma } from '../../config/database';
 import { generateApiKey } from '../../middleware/auth';
@@ -13,6 +14,22 @@ import { getRabbitMQChannel } from '../../config/rabbitmq';
 import { QUEUES } from '../../config/rabbitmq';
 import { ensureWalletForUser } from '../wallet/walletService';
 import { logAudit } from '../audit';
+
+/** Placeholder Stellar address until wallet is created on first signin. Schema: 56 chars, unique. */
+function getPlaceholderStellarAddress(): string {
+  const crypto = require('crypto');
+  return ('P' + crypto.randomBytes(28).toString('hex')).slice(0, 56);
+}
+
+export interface SignupParams {
+  username: string;
+  passcode: string;
+}
+
+export interface SignupResult {
+  user_id: string;
+  message: string;
+}
 
 export interface SigninParams {
   identifier: string; // username (with/without @), email, or E.164 phone
@@ -90,6 +107,44 @@ export async function resolveUserByIdentifier(identifier: string) {
       twoFaMethod: true,
     },
   });
+}
+
+/**
+ * Simple account creation: username + passcode. No email. Stellar wallet is created on first signin.
+ */
+export async function signup(params: SignupParams): Promise<SignupResult> {
+  const username = (params.username || '').trim().toLowerCase().replace(/\s/g, '');
+  if (!username || username.length > 64) {
+    throw new Error('Username is required and must be at most 64 characters');
+  }
+  if (!params.passcode || params.passcode.length < 4 || params.passcode.length > 64) {
+    throw new Error('Passcode must be 4–64 characters');
+  }
+  const existing = await prisma.user.findFirst({
+    where: { username },
+    select: { id: true },
+  });
+  if (existing) {
+    throw new Error('Username already taken');
+  }
+  const passcodeHash = await bcrypt.hash(params.passcode, 10);
+  const user = await prisma.user.create({
+    data: {
+      username,
+      passcodeHash,
+      stellarAddress: getPlaceholderStellarAddress(),
+    },
+    select: { id: true },
+  });
+  await logAudit({
+    eventType: 'auth',
+    entityType: 'user',
+    entityId: user.id,
+    action: 'signup',
+    performedBy: user.id,
+  });
+  logger.info('Signup: user created', { userId: user.id, username });
+  return { user_id: user.id, message: 'Account created. Sign in with your username and passcode.' };
 }
 
 /**

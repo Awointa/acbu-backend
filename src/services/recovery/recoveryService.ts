@@ -2,7 +2,7 @@
  * Recovery Tier 1: unlock app via email/phone + passcode.
  * On success, issues a new API key and returns it. Does not touch Stellar keys.
  */
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { prisma } from '../../config/database';
 import { generateApiKey } from '../../middleware/auth';
 import { logger } from '../../config/logger';

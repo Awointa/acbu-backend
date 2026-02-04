@@ -1,7 +1,6 @@
 import { contractClient, ContractClient } from '../stellar/contractClient';
 import { stellarClient } from '../stellar/client';
 import { logger } from '../../config/logger';
-import { xdr } from 'stellar-sdk';
 
 export interface MintFromUsdcParams {
   usdcAmount: string; // Amount in smallest unit (7 decimals)

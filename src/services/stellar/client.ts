@@ -1,6 +1,8 @@
-import { Server, Keypair, Networks, TransactionBuilder, Operation, Asset } from 'stellar-sdk';
+import { Horizon, Keypair, TransactionBuilder, Operation } from 'stellar-sdk';
 import { config } from '../../config/env';
 import { logger } from '../../config/logger';
+
+const Server = Horizon.Server;
 
 export interface StellarNetworkConfig {
   network: 'testnet' | 'mainnet';
@@ -9,17 +11,19 @@ export interface StellarNetworkConfig {
   secretKey?: string;
 }
 
+export type StellarServer = InstanceType<typeof Server>;
+
 export class StellarClient {
-  private server: Server;
+  private server: StellarServer;
   private network: 'testnet' | 'mainnet';
   private networkPassphrase: string;
   private keypair: Keypair | null = null;
 
-  constructor(config?: Partial<StellarNetworkConfig>) {
-    const network = (config?.network || config.stellar.network) as 'testnet' | 'mainnet';
-    const horizonUrl = config?.horizonUrl || config.stellar.horizonUrl;
+  constructor(cfg?: Partial<StellarNetworkConfig>) {
+    const network = (cfg?.network ?? config.stellar.network) as 'testnet' | 'mainnet';
+    const horizonUrl = cfg?.horizonUrl ?? config.stellar.horizonUrl;
     const networkPassphrase =
-      config?.networkPassphrase ||
+      cfg?.networkPassphrase ??
       (network === 'testnet'
         ? 'Test SDF Network ; September 2015'
         : 'Public Global Stellar Network ; September 2015');
@@ -29,19 +33,17 @@ export class StellarClient {
     this.server = new Server(horizonUrl);
 
     // Initialize keypair if secret key is provided
-    if (config?.secretKey || config.stellar.secretKey) {
-      const secretKey = config?.secretKey || config.stellar.secretKey;
-      if (secretKey) {
-        try {
-          this.keypair = Keypair.fromSecret(secretKey);
-          logger.info('Stellar keypair initialized', {
-            publicKey: this.keypair.publicKey(),
-            network,
-          });
-        } catch (error) {
-          logger.error('Failed to initialize Stellar keypair', { error });
-          throw new Error('Invalid Stellar secret key');
-        }
+    const secretKey = cfg?.secretKey ?? config.stellar.secretKey;
+    if (secretKey) {
+      try {
+        this.keypair = Keypair.fromSecret(secretKey);
+        logger.info('Stellar keypair initialized', {
+          publicKey: this.keypair.publicKey(),
+          network,
+        });
+      } catch (error) {
+        logger.error('Failed to initialize Stellar keypair', { error });
+        throw new Error('Invalid Stellar secret key');
       }
     }
   }
@@ -49,7 +51,7 @@ export class StellarClient {
   /**
    * Get the Stellar server instance
    */
-  getServer(): Server {
+  getServer(): InstanceType<typeof Server> {
     return this.server;
   }
 
@@ -106,7 +108,7 @@ export class StellarClient {
         timebounds: options?.timebounds,
       });
 
-      operations.forEach((op) => builder.addOperation(op));
+      operations.forEach((op) => builder.addOperation(op as unknown as Parameters<typeof builder.addOperation>[0]));
 
       const transaction = builder.build();
 

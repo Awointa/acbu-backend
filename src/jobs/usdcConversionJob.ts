@@ -2,6 +2,7 @@
  * Consumes USDC_CONVERSION queue: when MintEvent is received, process USDC → basket allocation.
  * Updates transaction and reserve history; basket weight distribution uses BasketService.
  */
+import type { ConsumeMessage } from 'amqplib';
 import { connectRabbitMQ, QUEUES } from '../config/rabbitmq';
 import { logger } from '../config/logger';
 import { prisma } from '../config/database';
@@ -24,7 +25,7 @@ export async function startUsdcConversionConsumer(): Promise<void> {
   ch.prefetch(1);
   ch.consume(
     QUEUE,
-    async (msg: { content: Buffer } | null) => {
+    async (msg: ConsumeMessage | null) => {
       if (!msg) return;
       try {
         const body = JSON.parse(msg.content.toString()) as UsdcConversionPayload;

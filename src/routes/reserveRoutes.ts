@@ -1,9 +1,9 @@
-import { Router } from 'express';
+import { Router, type IRouter } from 'express';
 import { getReserveStatus, trackReserves } from '../controllers/reserveController';
 import { validateApiKey } from '../middleware/auth';
 import { apiKeyRateLimiter } from '../middleware/rateLimiter';
 
-const router = Router();
+const router: IRouter = Router();
 
 // All reserve routes require API key authentication
 router.use(validateApiKey);

@@ -1,6 +1,7 @@
 /**
  * Consumes KYC_PROCESSING queue and runs machine layer for each application.
  */
+import type { ConsumeMessage } from 'amqplib';
 import { connectRabbitMQ, QUEUES } from '../config/rabbitmq';
 import { logger } from '../config/logger';
 import { processApplication } from '../services/kyc/machineLayer';
@@ -13,7 +14,7 @@ export async function startKycProcessingConsumer(): Promise<void> {
   ch.prefetch(1);
   ch.consume(
     QUEUE,
-    async (msg: { content: Buffer } | null) => {
+    async (msg: ConsumeMessage | null) => {
       if (!msg) return;
       try {
         const body = JSON.parse(msg.content.toString()) as { applicationId: string };

@@ -1,10 +1,10 @@
-import { Router } from 'express';
+import { Router, type IRouter } from 'express';
 import { validateApiKey } from '../middleware/auth';
 import { requireSegmentScope } from '../middleware/segmentGuard';
 import { apiKeyRateLimiter } from '../middleware/rateLimiter';
 import { postSavingsDeposit, postSavingsWithdraw, getSavingsPositions } from '../controllers/savingsController';
 
-const router = Router();
+const router: IRouter = Router();
 
 router.use(validateApiKey);
 router.use(requireSegmentScope('savings:read', 'savings:write'));

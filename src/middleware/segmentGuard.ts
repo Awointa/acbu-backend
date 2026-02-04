@@ -36,7 +36,7 @@ export type SegmentScope = (typeof SEGMENT_SCOPES)[number];
  * Use after validateApiKey. Denies with 403 if key lacks the scope.
  */
 export function requireSegmentScope(...scopes: SegmentScope[]) {
-  return (req: AuthRequest, res: Response, next: NextFunction): void => {
+  return (req: AuthRequest, _res: Response, next: NextFunction): void => {
     if (!req.apiKey) {
       next(new AppError('API key required', 401));
       return;
@@ -63,7 +63,7 @@ export function requireSegmentScope(...scopes: SegmentScope[]) {
 export const TIER_ORDER = ['free', 'verified', 'sme', 'enterprise'] as const;
 
 export function requireMinTier(minTier: (typeof TIER_ORDER)[number]) {
-  return (req: AuthRequest, res: Response, next: NextFunction): void => {
+  return (req: AuthRequest, _res: Response, next: NextFunction): void => {
     const tier = (req as any).userTier as string | undefined;
     if (tier === undefined) {
       next();

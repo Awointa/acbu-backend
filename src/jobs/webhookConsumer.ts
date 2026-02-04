@@ -1,6 +1,7 @@
 /**
  * Consumes WEBHOOKS queue: deliver outbound webhooks with HMAC-SHA256 signature and retries.
  */
+import type { ConsumeMessage } from 'amqplib';
 import { connectRabbitMQ, QUEUES } from '../config/rabbitmq';
 import { logger } from '../config/logger';
 import { deliverWebhook } from '../services/webhook';
@@ -15,7 +16,7 @@ export async function startWebhookConsumer(): Promise<void> {
   ch.prefetch(1);
   ch.consume(
     QUEUES.WEBHOOKS,
-    async (msg: { content: Buffer } | null) => {
+    async (msg: ConsumeMessage | null) => {
       if (!msg) return;
       try {
         const body = JSON.parse(msg.content.toString()) as WebhookJobPayload;

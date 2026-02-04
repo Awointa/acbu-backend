@@ -78,5 +78,6 @@ router.use('/savings', savingsRoutes);
 router.use('/lending', lendingRoutes);
 router.use('/gateway', gatewayRoutes);
 router.use('/bills', billsRoutes);
+router.use('/webhooks', webhookRoutes);
 
 export default router;

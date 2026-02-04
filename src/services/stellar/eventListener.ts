@@ -1,4 +1,3 @@
-import { Server, EventType } from 'stellar-sdk';
 import { stellarClient } from './client';
 import { logger } from '../../config/logger';
 
@@ -13,7 +12,7 @@ export interface ContractEvent {
 export type EventHandler = (event: ContractEvent) => Promise<void>;
 
 export class EventListener {
-  private server: Server;
+  private server: ReturnType<typeof stellarClient.getServer>;
   private eventHandlers: Map<string, EventHandler[]> = new Map();
   private isListening: boolean = false;
   private cursor: string | null = null;
@@ -94,7 +93,7 @@ export class EventListener {
           }
 
           // Update cursor
-          this.cursor = effect.pagingToken();
+          this.cursor = (effect as { paging_token?: string }).paging_token ?? (effect as { pagingToken?: () => string }).pagingToken?.() ?? '';
         }
 
         // Small delay to avoid rate limiting
@@ -177,7 +176,7 @@ export class EventListener {
     }
   ): Promise<ContractEvent[]> {
     try {
-      const builder = this.server.effects().forContract(contractId);
+      const builder = (this.server.effects() as unknown as { forContract: (id: string) => { ledger: (n: number) => unknown; limit: (n: number) => unknown; call: () => Promise<{ records: unknown[] }> } }).forContract(contractId);
 
       if (options?.fromLedger) {
         builder.ledger(options.fromLedger);
@@ -190,7 +189,7 @@ export class EventListener {
       const effects = await builder.call();
       const events: ContractEvent[] = [];
 
-      for (const effect of effects.records) {
+      for (const effect of effects.records as { type: string; ledger?: number; created_at: string; [k: string]: unknown }[]) {
         events.push({
           contractId,
           type: effect.type,

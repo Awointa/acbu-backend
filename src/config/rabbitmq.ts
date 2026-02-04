@@ -1,8 +1,8 @@
-import amqp, { Connection, Channel } from 'amqplib';
+import amqp, { Channel, ChannelModel } from 'amqplib';
 import { config } from './env';
 import { logger } from './logger';
 
-let connection: Connection | null = null;
+let connection: ChannelModel | null = null;
 let channel: Channel | null = null;
 
 export async function connectRabbitMQ(): Promise<Channel> {
@@ -12,11 +12,12 @@ export async function connectRabbitMQ(): Promise<Channel> {
 
   try {
     connection = await amqp.connect(config.rabbitmqUrl);
-    channel = await connection.createChannel();
+    const ch = await connection.createChannel();
+    channel = ch;
     logger.info('RabbitMQ connected successfully');
 
     // Handle connection errors
-    connection.on('error', (err) => {
+    connection.on('error', (err: Error) => {
       logger.error('RabbitMQ connection error', err);
     });
 
@@ -26,7 +27,7 @@ export async function connectRabbitMQ(): Promise<Channel> {
       channel = null;
     });
 
-    return channel;
+    return ch;
   } catch (error) {
     logger.error('Failed to connect to RabbitMQ', error);
     throw error;

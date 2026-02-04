@@ -1,6 +1,7 @@
 /**
  * Consumes OTP_SEND and NOTIFICATIONS queues; sends email/SMS via NotificationService.
  */
+import type { ConsumeMessage } from 'amqplib';
 import { connectRabbitMQ, QUEUES } from '../config/rabbitmq';
 import { logger } from '../config/logger';
 import { prisma } from '../config/database';
@@ -77,7 +78,7 @@ export async function startNotificationConsumer(): Promise<void> {
   await ch.assertQueue(QUEUES.OTP_SEND, { durable: true });
   ch.consume(
     QUEUES.OTP_SEND,
-    async (msg: { content: Buffer } | null) => {
+    async (msg: ConsumeMessage | null) => {
       if (!msg) return;
       try {
         const payload = JSON.parse(msg.content.toString()) as OtpSendPayload;
@@ -94,7 +95,7 @@ export async function startNotificationConsumer(): Promise<void> {
   await ch.assertQueue(QUEUES.NOTIFICATIONS, { durable: true });
   ch.consume(
     QUEUES.NOTIFICATIONS,
-    async (msg: { content: Buffer } | null) => {
+    async (msg: ConsumeMessage | null) => {
       if (!msg) return;
       try {
         const payload = JSON.parse(msg.content.toString()) as NotificationPayload;

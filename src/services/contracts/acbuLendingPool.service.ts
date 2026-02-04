@@ -1,6 +1,5 @@
 import { contractClient, ContractClient } from '../stellar/contractClient';
 import { stellarClient } from '../stellar/client';
-import { logger } from '../../config/logger';
 
 export interface DepositParams {
   lender: string; // Stellar address

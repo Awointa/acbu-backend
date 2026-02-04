@@ -55,7 +55,7 @@ export async function createTransfer(
   params: CreateTransferParams,
   options?: CreateTransferOptions
 ): Promise<CreateTransferResult> {
-  const { senderUserId, to, amountAcbu } = params;
+  const { senderUserId, to } = params;
   const amount = params.amountAcbu.trim();
   if (!amount || Number(amount) <= 0) {
     throw new Error('amount_acbu must be a positive number');

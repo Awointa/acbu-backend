@@ -1,8 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import type { AuthRequest } from '../middleware/auth';
 
 export async function getBillsCatalog(
-  req: Request,
+  _req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> {
@@ -18,7 +17,7 @@ export async function getBillsCatalog(
 }
 
 export async function postBillsPay(
-  req: Request,
+  _req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> {

@@ -1,15 +1,13 @@
 import { PrismaClient } from '@prisma/client';
-import { PrismaAccelerate } from '@prisma/adapter-accelerate';
+import { withAccelerate } from '@prisma/extension-accelerate';
 import { config } from './env';
 import { logger } from './logger';
 
-// Create Prisma Client with Accelerate adapter
-const accelerate = new PrismaAccelerate({
-  url: config.prismaAccelerateUrl || config.databaseUrl,
-});
+const useAccelerate = Boolean(config.prismaAccelerateUrl);
+const databaseUrl = useAccelerate ? config.prismaAccelerateUrl! : config.databaseUrl;
 
-export const prisma = new PrismaClient({
-  adapter: config.prismaAccelerateUrl ? accelerate : undefined,
+const basePrisma = new PrismaClient({
+  datasources: { db: { url: databaseUrl } },
   log: [
     { level: 'query', emit: 'event' },
     { level: 'error', emit: 'stdout' },
@@ -17,16 +15,18 @@ export const prisma = new PrismaClient({
   ],
 });
 
-// Log queries in development
+export const prisma = useAccelerate ? basePrisma.$extends(withAccelerate()) : basePrisma;
+
+// Log queries in development ($on exists only on base client, not on extended proxy)
 if (config.nodeEnv === 'development') {
-  prisma.$on('query' as never, (e: { query: string; params: string; duration: number }) => {
+  basePrisma.$on('query' as never, (e: { query: string; params: string; duration: number }) => {
     logger.debug('Query', { query: e.query, params: e.params, duration: `${e.duration}ms` });
   });
 }
 
 // Handle graceful shutdown
 process.on('beforeExit', async () => {
-  await prisma.$disconnect();
+  await basePrisma.$disconnect();
 });
 
 export default prisma;

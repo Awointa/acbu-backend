@@ -1,7 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { AuthRequest } from '../middleware/auth';
-import { signin, verify2fa } from '../services/auth';
+import { signin, signup, verify2fa } from '../services/auth';
 import { prisma } from '../config/database';
 import { AppError } from '../middleware/errorHandler';
 
@@ -10,10 +10,44 @@ const signinSchema = z.object({
   passcode: z.string().min(1, 'passcode is required'),
 });
 
+const signupSchema = z.object({
+  username: z.string().min(1, 'username is required').max(64),
+  passcode: z.string().min(4, 'passcode must be at least 4 characters').max(64),
+});
+
 const verify2faSchema = z.object({
   challenge_token: z.string().min(1, 'challenge_token is required'),
   code: z.string().min(1, 'code is required'),
 });
+
+/**
+ * POST /auth/signup
+ * Body: { username, passcode }
+ * Simple account creation; no email. Returns { user_id, message }.
+ */
+export async function postSignup(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const body = signupSchema.parse(req.body);
+    const result = await signup({
+      username: body.username.trim(),
+      passcode: body.passcode,
+    });
+    res.status(201).json(result);
+  } catch (e) {
+    if (e instanceof z.ZodError) {
+      const msg = e.errors.map((x) => x.message).join('; ');
+      return next(new AppError(msg, 400));
+    }
+    if (e instanceof Error) {
+      if (e.message === 'Username already taken') return next(new AppError(e.message, 409));
+    }
+    next(e);
+  }
+}
 
 /**
  * POST /auth/signin

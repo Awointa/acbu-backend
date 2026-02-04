@@ -1,8 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import { AppError } from '../middleware/errorHandler';
 
 export async function postSalaryDisburse(
-  req: Request,
+  _req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> {
@@ -18,7 +17,7 @@ export async function postSalaryDisburse(
 }
 
 export async function getSalaryBatches(
-  req: Request,
+  _req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> {
@@ -31,7 +30,7 @@ export async function getSalaryBatches(
 }
 
 export async function postSalarySchedule(
-  req: Request,
+  _req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> {

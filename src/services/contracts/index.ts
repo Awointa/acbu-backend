@@ -29,5 +29,9 @@ export * from './acbuBurning.service';
 export * from './acbuOracle.service';
 export * from './acbuReserveTracker.service';
 export * from './acbuSavingsVault.service';
-export * from './acbuLendingPool.service';
+export {
+  LendingPoolService,
+  type DepositParams as LendingPoolDepositParams,
+  type WithdrawParams as LendingPoolWithdrawParams,
+} from './acbuLendingPool.service';
 export * from './acbuEscrow.service';

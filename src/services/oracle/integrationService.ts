@@ -239,6 +239,6 @@ export async function getAverageRateOverHours(
     orderBy: { timestamp: 'asc' },
   });
   if (rows.length === 0) return null;
-  const sum = rows.reduce((a, r) => a + r.medianRate.toNumber(), 0);
+  const sum = rows.reduce((a: number, r: (typeof rows)[number]) => a + r.medianRate.toNumber(), 0);
   return sum / rows.length;
 }

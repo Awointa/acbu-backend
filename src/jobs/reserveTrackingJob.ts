@@ -1,7 +1,6 @@
 /**
  * Reserve tracking job: run trackReserves every 6 hours (reserve status publishing to oracle).
  */
-import { config } from '../config/env';
 import { logger } from '../config/logger';
 import { reserveTracker } from '../services/reserve/ReserveTracker';
 

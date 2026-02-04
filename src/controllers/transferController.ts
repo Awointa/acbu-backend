@@ -84,7 +84,7 @@ export async function getTransfers(
         completedAt: true,
       },
     });
-    const items = list.map((t) => ({
+    const items = list.map((t: (typeof list)[number]) => ({
       transaction_id: t.id,
       status: t.status,
       amount_acbu: t.acbuAmount?.toString() ?? null,

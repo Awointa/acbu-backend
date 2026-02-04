@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../config/database';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { AppError } from './errorHandler';
 import { logger } from '../config/logger';
 
@@ -19,7 +19,7 @@ export interface AuthRequest extends Request {
  */
 export const validateApiKey = async (
   req: AuthRequest,
-  res: Response,
+  _res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {

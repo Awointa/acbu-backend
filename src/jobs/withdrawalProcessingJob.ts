@@ -2,6 +2,7 @@
  * Consumes WITHDRAWAL_PROCESSING queue: after BurnEvent, validate withdrawal and recipient,
  * disburse via fintech, update transaction status, optionally publish user notification.
  */
+import type { ConsumeMessage } from 'amqplib';
 import { connectRabbitMQ, QUEUES } from '../config/rabbitmq';
 import { logger } from '../config/logger';
 import { prisma } from '../config/database';
@@ -20,7 +21,7 @@ export async function startWithdrawalProcessingConsumer(): Promise<void> {
   ch.prefetch(1);
   ch.consume(
     queue,
-    async (msg: { content: Buffer } | null) => {
+    async (msg: ConsumeMessage | null) => {
       if (!msg) return;
       try {
         const body = JSON.parse(msg.content.toString()) as WithdrawalPayload;

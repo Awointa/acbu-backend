@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 
 export async function postBulkTransfer(
-  req: Request,
+  _req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> {
@@ -17,7 +17,7 @@ export async function postBulkTransfer(
 }
 
 export async function getTreasury(
-  req: Request,
+  _req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> {

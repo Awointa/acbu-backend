@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import { Response, NextFunction } from 'express';
 import { z } from 'zod';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { Keypair } from 'stellar-sdk';
 import { AuthRequest } from '../middleware/auth';
 import { prisma } from '../config/database';
@@ -201,7 +201,7 @@ export async function getContacts(
       },
     });
     res.json({
-      contacts: contacts.map((c) => ({
+      contacts: contacts.map((c: (typeof contacts)[number]) => ({
         contact_id: c.id,
         contact_user_id: c.contactUserId,
         username: c.contactUser?.username ?? undefined,
@@ -321,7 +321,7 @@ export async function getGuardians(
       orderBy: [{ order: 'asc' }, { invitedAt: 'asc' }],
     });
     res.json({
-      guardians: guardians.map((g) => ({
+      guardians: guardians.map((g: (typeof guardians)[number]) => ({
         guardian_id: g.id,
         guardian_user_id: g.guardianUserId ?? undefined,
         guardian_email: g.guardianEmail ?? undefined,

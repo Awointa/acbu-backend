@@ -1,6 +1,7 @@
 /**
  * Consumes WALLET_ACTIVATION queue: when user pays KYC fee, send min XLM to their Stellar address.
  */
+import type { ConsumeMessage } from 'amqplib';
 import { connectRabbitMQ, QUEUES } from '../config/rabbitmq';
 import { logger } from '../config/logger';
 import { sendXlmToActivate } from '../services/wallet/walletActivationService';
@@ -13,7 +14,7 @@ export async function startWalletActivationConsumer(): Promise<void> {
   ch.prefetch(1);
   ch.consume(
     QUEUE,
-    async (msg: { content: Buffer } | null) => {
+    async (msg: ConsumeMessage | null) => {
       if (!msg) return;
       try {
         const body = JSON.parse(msg.content.toString()) as { userId: string; stellarAddress: string };

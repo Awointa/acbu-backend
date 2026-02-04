@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type IRouter } from 'express';
 import { validateApiKey } from '../middleware/auth';
 import { requireSegmentScope } from '../middleware/segmentGuard';
 import { apiKeyRateLimiter } from '../middleware/rateLimiter';
@@ -6,7 +6,7 @@ import { getRates } from '../controllers/ratesController';
 import mintRoutes from './mintRoutes';
 import burnRoutes from './burnRoutes';
 
-const router = Router();
+const router: IRouter = Router();
 
 router.use(validateApiKey);
 router.use(requireSegmentScope('international:read', 'international:write'));

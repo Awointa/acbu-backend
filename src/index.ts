@@ -13,7 +13,7 @@ import { swaggerSpec } from './config/swagger';
 import routes from './routes';
 import webhookRoutes from './routes/webhookRoutes';
 
-const app = express();
+const app: express.Express = express();
 
 // Security middleware
 app.use(helmet({ contentSecurityPolicy: false }));
@@ -56,65 +56,85 @@ app.use(errorHandler);
 // Initialize connections and start server
 async function startServer() {
   try {
-    // Connect to MongoDB
-    await connectMongoDB();
-    logger.info('MongoDB connected');
+    // Connect to MongoDB (optional: server starts even if unreachable or MONGODB_URI empty)
+    if (config.mongodbUri) {
+      try {
+        await connectMongoDB();
+        logger.info('MongoDB connected');
+      } catch (mongoError) {
+        logger.warn('MongoDB unavailable, continuing without cache. Set MONGODB_URI and ensure network access for cache.', mongoError);
+      }
+    } else {
+      logger.warn('MONGODB_URI not set; cache will be disabled.');
+    }
 
-    // Connect to RabbitMQ
-    await connectRabbitMQ();
-    logger.info('RabbitMQ connected');
+    // Connect to RabbitMQ (optional: server starts even if unreachable or credentials invalid)
+    let rabbitReady = false;
+    if (config.rabbitmqUrl) {
+      try {
+        await connectRabbitMQ();
+        logger.info('RabbitMQ connected');
+        rabbitReady = true;
+      } catch (rabbitError) {
+        logger.warn('RabbitMQ unavailable, continuing without queue-based features. Set RABBITMQ_URL and ensure broker access.', rabbitError);
+      }
+    } else {
+      logger.warn('RABBITMQ_URL not set; queue-based features disabled.');
+    }
 
-    // Start KYC processing consumer
-    const { startKycProcessingConsumer } = await import('./jobs/kycProcessingJob');
-    await startKycProcessingConsumer();
+    if (rabbitReady) {
+      // Start KYC processing consumer
+      const { startKycProcessingConsumer } = await import('./jobs/kycProcessingJob');
+      await startKycProcessingConsumer();
 
-    // Start wallet activation consumer (send XLM when KYC fee paid)
-    const { startWalletActivationConsumer } = await import('./jobs/walletActivationJob');
-    await startWalletActivationConsumer();
+      // Start wallet activation consumer (send XLM when KYC fee paid)
+      const { startWalletActivationConsumer } = await import('./jobs/walletActivationJob');
+      await startWalletActivationConsumer();
 
-    // Start notification consumer (OTP_SEND + NOTIFICATIONS → email/SMS)
-    const { startNotificationConsumer } = await import('./jobs/notificationConsumer');
-    await startNotificationConsumer();
+      // Start notification consumer (OTP_SEND + NOTIFICATIONS → email/SMS)
+      const { startNotificationConsumer } = await import('./jobs/notificationConsumer');
+      await startNotificationConsumer();
 
-    // Start outbound webhook consumer (WEBHOOKS → deliver with HMAC-SHA256)
-    const { startWebhookConsumer } = await import('./jobs/webhookConsumer');
-    await startWebhookConsumer();
+      // Start outbound webhook consumer (WEBHOOKS → deliver with HMAC-SHA256)
+      const { startWebhookConsumer } = await import('./jobs/webhookConsumer');
+      await startWebhookConsumer();
 
-    // Start oracle update scheduler (every 6h)
-    const { startOracleUpdateScheduler } = await import('./jobs/oracleUpdateJob');
-    await startOracleUpdateScheduler();
+      // Start oracle update scheduler (every 6h)
+      const { startOracleUpdateScheduler } = await import('./jobs/oracleUpdateJob');
+      await startOracleUpdateScheduler();
 
-    // Start reserve tracking scheduler (every 6h)
-    const { startReserveTrackingScheduler } = await import('./jobs/reserveTrackingJob');
-    await startReserveTrackingScheduler();
+      // Start reserve tracking scheduler (every 6h)
+      const { startReserveTrackingScheduler } = await import('./jobs/reserveTrackingJob');
+      await startReserveTrackingScheduler();
 
-    // Start daily rebalancing scheduler (00:00 UTC)
-    const { startRebalancingScheduler } = await import('./jobs/rebalancingJob');
-    await startRebalancingScheduler();
+      // Start daily rebalancing scheduler (00:00 UTC)
+      const { startRebalancingScheduler } = await import('./jobs/rebalancingJob');
+      await startRebalancingScheduler();
 
-    // Start proposed basket weights scheduler (metrics → proposed weights, e.g. monthly)
-    const { startProposedWeightsScheduler } = await import('./jobs/proposedWeightsJob');
-    await startProposedWeightsScheduler();
+      // Start proposed basket weights scheduler (metrics → proposed weights, e.g. monthly)
+      const { startProposedWeightsScheduler } = await import('./jobs/proposedWeightsJob');
+      await startProposedWeightsScheduler();
 
-    // Start USDC conversion consumer (MintEvent → basket allocation)
-    const { startUsdcConversionConsumer } = await import('./jobs/usdcConversionJob');
-    await startUsdcConversionConsumer();
+      // Start USDC conversion consumer (MintEvent → basket allocation)
+      const { startUsdcConversionConsumer } = await import('./jobs/usdcConversionJob');
+      await startUsdcConversionConsumer();
 
-    // Start withdrawal processing consumer (BurnEvent → fintech disbursement)
-    const { startWithdrawalProcessingConsumer } = await import('./jobs/withdrawalProcessingJob');
-    await startWithdrawalProcessingConsumer();
+      // Start withdrawal processing consumer (BurnEvent → fintech disbursement)
+      const { startWithdrawalProcessingConsumer } = await import('./jobs/withdrawalProcessingJob');
+      await startWithdrawalProcessingConsumer();
 
-    // Register MintEvent/BurnEvent handlers and start Stellar event listener (runs in background)
-    const { startMintEventListener } = await import('./jobs/acbu_minting_event_listener');
-    await startMintEventListener();
-    const { startBurnEventListener } = await import('./jobs/acbu_burning_event_listener');
-    await startBurnEventListener();
-    const { startSavingsVaultEventListener } = await import('./jobs/acbu_savings_vault_event_listener');
-    await startSavingsVaultEventListener();
-    const { startLendingPoolEventListener } = await import('./jobs/acbu_lending_pool_event_listener');
-    await startLendingPoolEventListener();
-    const { startEscrowEventListener } = await import('./jobs/acbu_escrow_event_listener');
-    await startEscrowEventListener();
+      // Register MintEvent/BurnEvent handlers and start Stellar event listener (runs in background)
+      const { startMintEventListener } = await import('./jobs/acbu_minting_event_listener');
+      await startMintEventListener();
+      const { startBurnEventListener } = await import('./jobs/acbu_burning_event_listener');
+      await startBurnEventListener();
+      const { startSavingsVaultEventListener } = await import('./jobs/acbu_savings_vault_event_listener');
+      await startSavingsVaultEventListener();
+      const { startLendingPoolEventListener } = await import('./jobs/acbu_lending_pool_event_listener');
+      await startLendingPoolEventListener();
+      const { startEscrowEventListener } = await import('./jobs/acbu_escrow_event_listener');
+      await startEscrowEventListener();
+    }
     const { eventListener } = await import('./services/stellar/eventListener');
     void eventListener.start();
 

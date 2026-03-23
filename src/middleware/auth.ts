@@ -35,10 +35,9 @@ export const validateApiKey = async (
       throw new AppError("API key is required", 401);
     }
 
-    // Find API key in database
-    const apiKeyRecord = await prisma.apiKey.findFirst({
+    // Fetch active keys and compare against their stored bcrypt hashes.
+    const candidateApiKeys = await prisma.apiKey.findMany({
       where: {
-        keyHash: await hashApiKey(apiKey),
         revokedAt: null,
         OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
       },
@@ -47,6 +46,14 @@ export const validateApiKey = async (
         organization: true,
       },
     });
+
+    let apiKeyRecord = null;
+    for (const candidateKey of candidateApiKeys) {
+      if (await bcrypt.compare(apiKey, candidateKey.keyHash)) {
+        apiKeyRecord = candidateKey;
+        break;
+      }
+    }
 
     if (!apiKeyRecord) {
       throw new AppError("Invalid API key", 401);

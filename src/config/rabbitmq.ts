@@ -61,6 +61,7 @@ export const QUEUES = {
   NOTIFICATIONS: "notifications",
   OTP_SEND: "otp_send", // OTP delivery (email/SMS) via worker
   WEBHOOKS: "webhooks",
+  WEBHOOKS_DLQ: "webhooks_dlq", // failed webhook deliveries for retry
   KYC_PROCESSING: "kyc_processing",
   WALLET_ACTIVATION: "wallet_activation", // send XLM to user wallet when KYC fee paid
   ACBU_SAVINGS_VAULT_EVENTS: "acbu_savings_vault_events",

@@ -140,7 +140,7 @@ export class CacheService {
         returnDocument: "after",
       });
 
-      return (result as any)?.value?.value as T;
+      return result?.value as T;
     } catch (error) {
       logger.error("Cache increment error", { key, error });
       return null;

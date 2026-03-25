@@ -17,9 +17,15 @@ import { logAudit } from "../audit";
 
 import * as crypto from "crypto";
 
-/** Placeholder Stellar address until wallet is created on first signin. Schema: 56 chars, unique. */
+/** Placeholder Stellar address until wallet is created on first signin. Schema: 56 chars, unique, starts with G. */
 function getPlaceholderStellarAddress(): string {
-  return ("P" + crypto.randomBytes(28).toString("hex")).slice(0, 56);
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+  const bytes = crypto.randomBytes(55);
+  let res = "G";
+  for (let i = 0; i < 55; i++) {
+    res += alphabet[bytes[i] % 32];
+  }
+  return res;
 }
 
 export interface SignupParams {

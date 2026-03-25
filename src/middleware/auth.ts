@@ -139,7 +139,7 @@ export async function generateApiKey(
       userId: userId ?? null,
       lookupKey,
       keyHash,
-      permissions: permissions as any,
+      permissions,
     },
   });
 

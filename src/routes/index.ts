@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { config } from "../config/env";
-import { deepHealthCheck } from "../controllers/healthController";
+import { validateApiKey } from "../middleware/auth";
 import reserveRoutes from "./reserveRoutes";
 import kycRoutes from "./kycRoutes";
 import recipientRoutes from "./recipientRoutes";
@@ -44,7 +44,7 @@ router.get("/health", (_req, res) => {
 router.get("/health/deep", deepHealthCheck);
 
 // Extended health / metrics (reserve ratio when available; for monitoring dashboards)
-router.get("/health/metrics", async (_req, res) => {
+router.get("/health/metrics", validateApiKey, async (_req, res) => {
   try {
     const { reserveTracker } =
       await import("../services/reserve/ReserveTracker");

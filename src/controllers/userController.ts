@@ -14,6 +14,27 @@ const WALLET_ENC_KEYLEN = 32;
 const WALLET_ENC_IVLEN = 12;
 const WALLET_ENC_ALGO = "aes-256-gcm";
 
+type BalanceCacheValue = {
+  balance: string;
+  currency: "ACBU";
+  stellar_address: string | null;
+  balance_stellar: string;
+  balance_source: "stellar" | "none";
+};
+
+const balanceCache = new Map<
+  string,
+  { expiresAt: number; value: BalanceCacheValue }
+>();
+
+function getBalanceCacheTtlMs(): number {
+  const raw = process.env.BALANCE_CACHE_TTL_MS;
+  const n = raw ? Number(raw) : 15_000;
+  // Guard against misconfig: keep within sane bounds.
+  if (!Number.isFinite(n) || n < 0) return 15_000;
+  return Math.min(Math.max(0, Math.floor(n)), 120_000);
+}
+
 /** Normalize username: lowercase, no spaces. */
 function normalizeUsername(s: string): string {
   return s.trim().toLowerCase().replace(/\s/g, "");
@@ -697,19 +718,30 @@ export async function getMeBalance(
     });
 
     if (!user || !user.stellarAddress) {
-      res.json({
+      const payload: BalanceCacheValue = {
         balance: "0",
         currency: "ACBU",
         stellar_address: null,
         balance_stellar: "0",
-        balance_app_ledger: "0",
         balance_source: "none",
-      });
+      };
+      res.json(payload);
+      return;
+    }
+
+    const horizonUrl =
+      process.env.STELLAR_HORIZON_URL || "https://horizon-testnet.stellar.org";
+    const assetCode = process.env.STELLAR_ACBU_ASSET_CODE || "ACBU";
+    const assetIssuer = process.env.STELLAR_ACBU_ASSET_ISSUER || "";
+    const cacheKey = [userId, horizonUrl, assetCode, assetIssuer].join("|");
+    const cached = balanceCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      res.json(cached.value);
       return;
     }
 
     const server = new StellarSdk.Horizon.Server(
-      process.env.STELLAR_HORIZON_URL || "https://horizon-testnet.stellar.org",
+      horizonUrl,
     );
 
     try {
@@ -717,33 +749,39 @@ export async function getMeBalance(
       const acbuBalance = account.balances.find((b: any) => {
         if (b.asset_type === "native") return false;
         return (
-          b.asset_code === (process.env.STELLAR_ACBU_ASSET_CODE || "ACBU") &&
-          b.asset_issuer === process.env.STELLAR_ACBU_ASSET_ISSUER
+          b.asset_code === assetCode && b.asset_issuer === assetIssuer
         );
       });
 
       const stellarNum = acbuBalance ? parseFloat(acbuBalance.balance) : 0;
       const displayNum = Number.isFinite(stellarNum) ? stellarNum : 0;
 
-      res.json({
+      const payload: BalanceCacheValue = {
         balance: String(displayNum),
         currency: "ACBU",
         stellar_address: user.stellarAddress,
         balance_stellar: String(displayNum),
-        balance_app_ledger: "0",
         balance_source: "stellar",
-        balances: account.balances,
+      };
+      balanceCache.set(cacheKey, {
+        expiresAt: Date.now() + getBalanceCacheTtlMs(),
+        value: payload,
       });
+      res.json(payload);
     } catch (stellarError: any) {
       if (stellarError.response?.status === 404) {
-        res.json({
+        const payload: BalanceCacheValue = {
           balance: "0",
           currency: "ACBU",
           stellar_address: user.stellarAddress,
           balance_stellar: "0",
-          balance_app_ledger: "0",
           balance_source: "none",
+        };
+        balanceCache.set(cacheKey, {
+          expiresAt: Date.now() + getBalanceCacheTtlMs(),
+          value: payload,
         });
+        res.json(payload);
         return;
       }
       throw stellarError;

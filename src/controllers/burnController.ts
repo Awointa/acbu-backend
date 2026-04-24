@@ -106,6 +106,7 @@ export async function burnAcbu(
     const tx = await prisma.transaction.create({
       data: {
         userId: req.apiKey?.userId ?? undefined,
+        organizationId: req.apiKey?.organizationId ?? undefined,
         type: "burn",
         status: "pending",
         acbuAmountBurned: new Decimal(acbuNum),
@@ -115,7 +116,6 @@ export async function burnAcbu(
         fee: new Decimal(feeAcbu),
         rateSnapshot: {
           acbu_ngn: null,
-          organizationId: req.apiKey?.organizationId ?? null,
           timestamp: new Date().toISOString(),
         },
       },

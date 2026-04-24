@@ -12,7 +12,7 @@ import { AppError } from "../middleware/errorHandler";
 import { isValidStellarAddress } from "../utils/stellar";
 import { assertUserWalletAddress } from "../services/wallet/walletService";
 
-const bodySchema = z.object({
+export const bodySchema = z.object({
   stellar_address: z
     .string()
     .length(56)
